@@ -1,0 +1,66 @@
+###trigger:
+###- master
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: TerraformValidate
+    jobs:
+      - job: Terrafrom_Job 
+        continueOnError: false
+        steps:
+        - task: PublishPipelineArtifact@1
+          displayName: Publish Artifacts
+          inputs:
+            targetPath: '$(Pipeline.Workspace)'
+            artifact: 'Terrafrom-out'
+            publishLocation: 'pipeline'
+        - task: CopyFiles@2
+          displayName: Copy files to Aritifacts
+          inputs:
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        - task: UniversalPackages@0
+          displayName: Publish to Artifacts 
+          inputs:
+            command: 'publish'
+            publishDirectory: '$(Build.ArtifactStagingDirectory)'
+            feedsToUsePublish: 'internal'
+            vstsFeedPublish: '7799bf22-7644-4482-adc9-a299839a8f8d'
+            vstsFeedPackagePublish: 'terraform'
+            versionOption: 'patch'
+            packagePublishDescription: 'Databricks terrafrom package'
+            verbosity: 'Debug'
+        - task: TerraformInstaller@0
+          displayName: Terraform Install
+          inputs:
+            terraformVersion: 'latest'
+        - task: TerraformCLI@0
+          displayName: Terraform init 
+          inputs:
+            command: 'init'
+            backendType: 'azurerm'
+            backendServiceArm: 'db_service_connection_pg'
+            backendAzureRmResourceGroupName: 'DataBricks-sg'
+            backendAzureRmStorageAccountName: 'dbrickstate'
+            backendAzureRmContainerName: 'tfstatefiles'
+            backendAzureRmKey: 'terraformado.tfstate'
+            allowTelemetryCollection: false
+        - task: TerraformCLI@0
+          displayName: Terraform Validate
+          inputs:
+            command: 'validate'
+            allowTelemetryCollection: false
+        - task: TerraformCLI@0
+          displayName: Terraform PLan
+          inputs:
+            command: 'plan'
+            environmentServiceName: 'db_service_connection_pg'
+            allowTelemetryCollection: false
+        # - task: TerraformCLI@0
+        #   displayName: Terraform apply 
+        #   inputs:
+        #     command: 'apply'
+        #     environmentServiceName: 'db_service_connection_pg'
+        #     allowTelemetryCollection: false
+        

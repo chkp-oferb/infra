@@ -1,0 +1,38 @@
+###trigger:
+###- master
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: TerraformValidate
+    jobs:
+      - job: Terrafrom_Destroy_Job 
+        continueOnError: false
+        steps:
+        - task: TerraformInstaller@0
+          displayName: Terraform Install
+          inputs:
+            terraformVersion: 'latest'
+        - task: TerraformCLI@0
+          displayName: Terraform init 
+          inputs:
+            command: 'init'
+            backendType: 'azurerm'
+            backendServiceArm: 'db_service_connection_pg'
+            backendAzureRmResourceGroupName: 'DataBricks-sg'
+            backendAzureRmStorageAccountName: 'dbrickstate'
+            backendAzureRmContainerName: 'tfstatefiles'
+            backendAzureRmKey: 'terraformado.tfstate'
+            allowTelemetryCollection: false
+        - task: TerraformCLI@0
+          displayName: Terraform Validate
+          inputs:
+            command: 'validate'
+            allowTelemetryCollection: false
+        - task: TerraformCLI@0
+          displayName: Terraform Destroy
+          inputs:
+            command: 'destroy'
+            environmentServiceName: 'db_service_connection_pg'
+            allowTelemetryCollection: false
